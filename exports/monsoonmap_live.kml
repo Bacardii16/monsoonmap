@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <NetworkLink>
+    <name>MonsoonMap — Live Waterlogging Reports</name>
+    <description>Auto-refreshes from the MonsoonMap backend every 5 minutes. Import this once into Google Earth.</description>
+    <Link>
+      <!-- Replace with your ngrok URL (dev) or deployed backend URL (prod) -->
+      <href>http://localhost:5000/api/export/kml</href>
+      <refreshMode>onInterval</refreshMode>
+      <refreshInterval>300</refreshInterval>
+    </Link>
+  </NetworkLink>
+</kml>

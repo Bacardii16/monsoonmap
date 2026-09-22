@@ -1,0 +1,774 @@
+:root {
+  --ink: #f5f6fa;
+  --slate: #99a0ad;
+  /* Blue/white/red played as three distinct roles rather than a single
+     "brand color": brand (blue) drives structural UI — buttons, active
+     chips, the map's own water/highway tint, reinforcing the map-app
+     convention that blue = water/navigation. Accent (white) marks
+     selection/focus states. Accent-2 (red) is the one "needs attention"
+     color — used sparingly (e.g. the worst-waterlogging stat card's
+     border) so it echoes the severity red already used for hazard pins
+     rather than fighting it for meaning. */
+  --brand: #3b82f6;
+  --brand-dark: #1e4fa8;
+  --accent: #ffffff;
+  --accent-2: #ff3b3b;
+  --mist: #000000;
+  --card: #111318;
+  --card-2: #191c24;
+  --line: rgba(255, 255, 255, 0.13);
+  --glow: rgba(59, 130, 246, 0.35);
+  --glow-1: rgba(59, 130, 246, 0.18);
+  --glow-2: rgba(255, 255, 255, 0.06);
+  --glass-bg: rgba(17, 19, 24, 0.72);
+  --sidebar-gradient: linear-gradient(185deg, #171a22 0%, var(--mist) 55%);
+
+  --clear: #3ed598;
+  --minor: #ffd166;
+  --difficult: #ff9e4a;
+  --impassable: #ff5c5c;
+}
+
+/* Light theme overrides. Toggled by setting data-theme="light" on <html>
+   (see the toggle button in Header.jsx / theme logic in App.jsx). Brand and
+   severity colors stay the same across both themes on purpose — they're
+   identity/status colors, not surface colors. */
+[data-theme="light"] {
+  --ink: #10131c;
+  --slate: #5a6270;
+  --mist: #f3f4f7;
+  --card: #ffffff;
+  --card-2: #eceef2;
+  --line: rgba(16, 19, 28, 0.12);
+  --glow-1: rgba(59, 130, 246, 0.08);
+  --glow-2: rgba(0, 0, 0, 0.05);
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --sidebar-gradient: linear-gradient(185deg, #ffffff 0%, var(--mist) 55%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: "Inter", -apple-system, sans-serif;
+  background: var(--mist);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Desktop shell: a fixed sidebar (branding, stats, filters, report list)
+   beside a map that fills the rest of the viewport. Collapses to a stacked
+   layout below 860px so it still works on narrower/tablet screens. A couple
+   of soft, fixed radial glows sit behind everything for depth instead of a
+   flat single-color background. */
+.mm-layout {
+  display: flex;
+  height: 100dvh;
+  width: 100%;
+  background:
+    radial-gradient(720px 480px at 8% -8%, var(--glow-1), transparent 60%),
+    radial-gradient(640px 460px at 100% 108%, var(--glow-2), transparent 55%),
+    var(--mist);
+  position: relative;
+  overflow: hidden;
+  transition: background 0.25s ease;
+}
+
+.mm-sidebar {
+  width: 400px;
+  min-width: 340px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  /* Faint dot-grid texture layered on top of the gradient (both in one
+     shorthand — a separate background-image declaration after this would
+     have replaced the gradient instead of layering over it) — fills the
+     empty space between sections with subtle detail instead of a flat
+     panel. */
+  background: radial-gradient(circle, var(--line) 1px, transparent 1px) 0 0 / 22px 22px, var(--sidebar-gradient);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  transition: background 0.25s ease, border-color 0.25s ease, width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+}
+
+/* Collapsed state: the whole sidebar shrinks to zero width rather than
+   just hiding — width transitions smoothly since it's an explicit
+   property (not display:none, which can't be animated). */
+.mm-sidebar.mm-sidebar-collapsed {
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  border-right: none;
+  overflow: hidden;
+}
+
+/* Small chevron tab sitting right at the sidebar/map boundary, always
+   visible regardless of collapsed state, so there's a permanent, obvious
+   way to bring the sidebar back. Its own `left` transitions in step with
+   the sidebar's width so it slides along with the collapse animation. */
+.mm-sidebar-toggle {
+  position: absolute;
+  top: 50%;
+  left: 400px;
+  transform: translateY(-50%);
+  z-index: 700;
+  width: 22px;
+  height: 46px;
+  border-radius: 0 8px 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  transition: left 0.3s ease;
+}
+.mm-sidebar-toggle.mm-collapsed {
+  left: 0;
+  border-radius: 0 8px 8px 0;
+}
+
+@media (max-width: 860px) {
+  .mm-sidebar-toggle {
+    display: none;
+  }
+}
+
+.mm-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+.mm-sidebar::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 8px;
+}
+
+/* Same thin themed scrollbar, reused on the report list's own inner scroll
+   container (it scrolls independently of the sidebar so the header/stats/
+   filters above it stay put) — without this it fell back to a plain,
+   mismatched native scrollbar. */
+.mm-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.mm-scroll::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 8px;
+}
+.mm-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.mm-map-area {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+@media (max-width: 860px) {
+  .mm-layout {
+    flex-direction: column;
+  }
+  .mm-sidebar {
+    width: 100%;
+    max-width: none;
+    max-height: 46vh;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .mm-map-area {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* focus visibility for accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Pulsing ring drawn around markers reporting impassable roads,
+   to draw attention to the most urgent conditions on the map. Color
+   updated to match --impassable (was a leftover hardcoded red from before
+   the palette rewrites — the pulse itself already ran continuously). */
+@keyframes mm-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 92, 92, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 92, 92, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 92, 92, 0);
+  }
+}
+
+.mm-pulse-marker {
+  animation: mm-pulse 1.8s ease-out infinite;
+}
+
+/* Destination pin drop-in and ripple, played when a search result is reached */
+@keyframes mm-land {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes mm-ring {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+.mm-land-marker {
+  animation: mm-land 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.mm-ring-marker {
+  animation: mm-ring 1s ease-out;
+}
+
+/* Inverts the light OpenStreetMap tiles into a dark-mode map, since free
+   dark-tile providers require a paid plan. Scoped to dark theme only —
+   light theme shows the tiles as-is. Transitioned so switching themes
+   fades between them instead of snapping instantly. */
+.leaflet-tile-pane {
+  transition: filter 0.4s ease;
+}
+[data-theme="dark"] .leaflet-tile-pane {
+  filter: invert(94%) hue-rotate(180deg) brightness(0.92) contrast(0.95) saturate(0.85);
+}
+
+/* Themed background so the map shows a matching color instead of a stark
+   white flash while tiles are still loading in. */
+.leaflet-container {
+  background: var(--card);
+}
+
+/* Crosshair cursor while the user is in "place a report here" mode, so the
+   map itself signals the mode, not just the banner text above it. */
+.mm-placing-mode,
+.mm-placing-mode .leaflet-grab {
+  cursor: crosshair !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--card-2) !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+}
+.leaflet-control-zoom {
+  border: 1px solid var(--line) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+/* Leaflet's attribution strip (required by OSM's usage terms) otherwise
+   renders in its default plain-white styling, clashing with the app's
+   dark theme. */
+.leaflet-control-attribution {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  color: var(--slate) !important;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 6px !important;
+}
+.leaflet-control-attribution a {
+  color: var(--ink) !important;
+}
+
+/* Leaflet's divIcon draws a plain white square by default — our own pin,
+   cluster, destination, and particle-burst markers style everything
+   themselves, so this strips that default box entirely. */
+.mm-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Report popups are rendered as our own CustomPopup component (see
+   MapView.jsx) on top of react-leaflet's <Popup>, with Leaflet's own
+   chrome (white card, tip, close button) stripped here so only our
+   custom-styled card shows. */
+.mm-custom-popup .leaflet-popup-content-wrapper {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+}
+.mm-custom-popup .leaflet-popup-content {
+  margin: 0;
+}
+.mm-custom-popup .leaflet-popup-tip-container {
+  display: none;
+}
+
+/* Frosted-glass treatment for controls that float over the map (search bar,
+   recenter button) so they read as overlays rather than flat opaque boxes. */
+.mm-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid var(--line);
+}
+
+/* Shared hover/press micro-interaction for clickable buttons: a slight lift
+   and brighten on hover, a settle-down on press. Applied via class since
+   inline styles can't express :hover. */
+.mm-interactive {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, background 0.15s ease;
+}
+.mm-interactive:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+.mm-interactive:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+/* The two stat cards at the top of the sidebar (Cities covered, Worst
+   waterlogging) lift slightly and deepen their shadow on hover, matching
+   the tactile feel buttons elsewhere already have. */
+.mm-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Thin bar under a toast's text that drains from full width to nothing
+   over its ~2.6s lifetime, so there's a visible cue for how long you have
+   before it auto-dismisses. Keyed to the toast's timestamp in App.jsx so
+   each new toast remounts this element and restarts the animation. */
+@keyframes mm-toast-drain {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.mm-toast-drain {
+  animation: mm-toast-drain 2.6s linear forwards;
+}
+
+/* Expanding ring shown briefly at a pin's location right when it's
+   clicked — a "tap acknowledged" cue before the camera even starts flying
+   there. */
+@keyframes mm-click-ripple {
+  from {
+    transform: scale(0.3);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+.mm-click-ripple {
+  animation: mm-click-ripple 0.5s ease-out forwards;
+}
+
+/* Sidebar report-list rows: background eases in on hover, a slight lift
+   gives it physical weight, and the chevron icon (.mm-chevron) nudges
+   right to hint at the click target. */
+.mm-list-item {
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.mm-list-item:hover {
+  background: var(--card-2) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+.mm-list-item .mm-chevron {
+  transition: transform 0.15s ease;
+}
+.mm-list-item:hover .mm-chevron {
+  transform: translateX(2px);
+}
+
+/* Map pin markers: scale up slightly on hover so the map feels responsive
+   even before a click registers. Rotation (used by the teardrop-shaped
+   waterlogging pins) comes in via the --rot custom property rather than an
+   inline transform, so hover can layer scale() on top without clobbering
+   the rotation the marker was drawn with. */
+.mm-marker {
+  transform: rotate(var(--rot, 0deg));
+  transition: transform 0.15s ease;
+}
+.mm-marker:hover {
+  transform: rotate(var(--rot, 0deg)) scale(1.18);
+}
+
+/* Filter chips lift and brighten on hover, same language as buttons. Also
+   transitions background/color so switching which chip is active animates
+   smoothly instead of snapping between colors. */
+.mm-chip {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease,
+    border-color 0.15s ease, background 0.2s ease, color 0.2s ease;
+}
+.mm-chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent) !important;
+}
+
+/* Report-form type/severity picker cards: same idea — border, background,
+   and the selection glow all ease in rather than snapping when you pick a
+   different option. */
+.mm-select-card {
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+.mm-select-card:hover {
+  transform: translateY(-1px);
+}
+.mm-select-card:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Photo upload dropzone: brightens border/background on hover so it reads
+   as clickable, not just a static dashed box. */
+.mm-dropzone {
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.mm-dropzone:hover {
+  border-color: var(--accent) !important;
+  color: var(--ink) !important;
+}
+
+/* Quick fade+slide entrance for small floating elements that appear after
+   the initial render — search suggestions, the empty-state card, the map
+   legend — so they ease in instead of popping into existence. */
+@keyframes mm-fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.mm-fade-in-down {
+  animation: mm-fade-in-down 0.18s ease both;
+}
+@keyframes mm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.mm-fade-in {
+  animation: mm-fade-in 0.3s ease both;
+}
+
+/* Globe intro: canvas scale+fades in on mount rather than appearing
+   instantly, and a soft halo behind it pulses continuously to make the
+   globe feel alive even before the auto-rotate/dive motion kicks in. */
+@keyframes mm-globe-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.mm-globe-enter {
+  animation: mm-globe-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes mm-globe-breathe {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+}
+.mm-globe-breathe {
+  animation: mm-globe-breathe 4s ease-in-out infinite;
+}
+
+/* Rain-streak overlay for the globe intro — each drop falls top-to-bottom
+   at a slight angle and fades in/out, rather than being visible for its
+   entire fall (which would look like it's clipping in/out of frame). */
+@keyframes mm-rain-fall {
+  0% {
+    transform: translateY(-30%) rotate(10deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.5;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(160%) rotate(10deg);
+    opacity: 0;
+  }
+}
+.mm-rain-drop {
+  position: absolute;
+  top: -10%;
+  width: 1.5px;
+  background: linear-gradient(to bottom, transparent, rgba(210, 230, 255, 0.8), transparent);
+  animation-name: mm-rain-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+/* Same rain visual as the globe intro, but looping continuously and much
+   fainter — an ambient touch behind the sidebar header rather than a
+   one-shot effect, tying the "monsoon" theme into the main app itself. */
+.mm-rain-drop-ambient {
+  position: absolute;
+  top: -20%;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(210, 230, 255, 0.35), transparent);
+  animation-name: mm-rain-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* Shooting star for the globe intro. The wrapping element (see
+   GlobeIntro.jsx) handles static position + rotation; this only animates
+   translateX (along that already-rotated axis, so it reads as diagonal
+   motion) and opacity. */
+@keyframes mm-shooting-star {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(var(--mm-travel, 160px));
+    opacity: 0;
+  }
+}
+.mm-shooting-star {
+  width: 90px;
+  height: 2px;
+  background: linear-gradient(to left, rgba(255, 255, 255, 0.95), transparent);
+  border-radius: 2px;
+  animation: mm-shooting-star 850ms ease-in forwards;
+}
+
+/* Floating "+1" shown briefly above the upvote button on click. */
+@keyframes mm-float-up {
+  0% {
+    transform: translate(-50%, 0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -22px);
+    opacity: 0;
+  }
+}
+.mm-float-up {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+  animation: mm-float-up 700ms ease-out forwards;
+}
+
+/* Particle burst played once at a report's location on successful submit. */
+@keyframes mm-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--mm-tx, 20px), var(--mm-ty, 20px)) scale(0.3);
+    opacity: 0;
+  }
+}
+.mm-burst-particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: mm-burst 650ms ease-out forwards;
+}
+
+/* Slow, seamless horizontal drift for the header's wave divider. */
+@keyframes mm-wave-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.mm-wave-drift {
+  animation: mm-wave-drift 8s linear infinite;
+}
+
+/* Stroke "draw-in" for the toast's success/error icon — each element sets
+   its own inline stroke-dasharray/dashoffset (path lengths differ), and
+   this animates dashoffset down to 0 from whatever that starting value is. */
+@keyframes mm-draw-in {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.mm-draw-in {
+  animation: mm-draw-in 0.4s ease-out forwards;
+}
+
+/* Gentle pulsing glow for "live" indicator dots (e.g. the header's active
+   report count badge) — signals "this is live data", not just decoration. */
+@keyframes mm-live-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px var(--glow);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+.mm-live-dot {
+  animation: mm-live-pulse 2s ease-in-out infinite;
+}
+
+/* Simple spinner for in-progress states (submit button while saving). */
+@keyframes mm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.mm-spinner {
+  animation: mm-spin 0.7s linear infinite;
+}
+
+/* Click feedback: a quick squash-and-recover so buttons feel tactile the
+   instant they're pressed, not just on the eventual state change. */
+@keyframes mm-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.mm-pop-once {
+  animation: mm-pop 0.35s ease;
+}
+
+/* Subtle recurring sheen sweeping across the primary CTA, drawing the eye
+   without being a constant distraction (long pause between sweeps). */
+@keyframes mm-sheen {
+  0% {
+    background-position: -150% 0;
+  }
+  35%,
+  100% {
+    background-position: 250% 0;
+  }
+}
+.mm-sheen-cta {
+  position: relative;
+  overflow: hidden;
+}
+.mm-sheen-cta::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%);
+  background-size: 250% 100%;
+  animation: mm-sheen 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Staggered fade-up entrance for sidebar sections on first paint. */
+@keyframes mm-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.mm-fade-up {
+  animation: mm-fade-up 0.4s ease both;
+}
+
+/* Shimmering skeleton placeholders, shown while reports are still loading
+   so the sidebar doesn't flash "0 reports" before real data arrives. */
+@keyframes mm-shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+.mm-skeleton {
+  background: linear-gradient(90deg, var(--card-2) 0%, var(--line) 50%, var(--card-2) 100%);
+  background-size: 400px 100%;
+  animation: mm-shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}

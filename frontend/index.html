@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MonsoonMap — Live Waterlogging &amp; Road Damage Tracker for India</title>
+    <meta
+      name="description"
+      content="Crowdsourced live map of waterlogging and pothole reports across India. See what's flooded, report an issue, and plan your route around it."
+    />
+    <meta property="og:title" content="MonsoonMap — Live Waterlogging & Road Damage Tracker for India" />
+    <meta
+      property="og:description"
+      content="Crowdsourced live map of waterlogging and pothole reports across India."
+    />
+    <meta property="og:type" content="website" />
+    <!-- Inline SVG favicon — same droplet mark used in the app header, so the
+         browser tab matches the in-app logo without needing a separate image
+         asset checked into the repo. -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%233b82f6'/%3E%3Cpath d='M12 4c-.4 0-.8.2-1 .5C9.3 7 6.5 11.3 6.5 14.5a5.5 5.5 0 0011 0c0-3.2-2.8-7.5-4.5-10a1.2 1.2 0 00-1-.5z' fill='white'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Runs synchronously, before first paint, so the static splash below
+         (and the real app once React mounts) start in the right theme
+         immediately — without this, there'd be a flash of the wrong theme
+         for anyone who saved a preference different from their OS default.
+         Key/logic here must stay in sync with THEME_STORAGE_KEY in
+         src/App.jsx. -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("monsoonmap-theme");
+          var theme =
+            saved === "light" || saved === "dark"
+              ? saved
+              : window.matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark";
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {
+          /* localStorage can throw in some privacy modes — default dark is fine */
+        }
+      })();
+    </script>
+    <style>
+      /* Static splash shown only until React mounts and replaces #root's
+         content — covers the otherwise-blank gap on first paint before any
+         JS has run. Colors are hardcoded to mirror the CSS variables in
+         index.css (not shared with them directly, since this has to work
+         before that stylesheet's custom properties are relevant here). */
+      #splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        background: #000000;
+        font-family: "Inter", -apple-system, sans-serif;
+      }
+      html[data-theme="light"] #splash {
+        background: #f3f4f7;
+      }
+      #splash .logo {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: #3b82f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #splash .spinner {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2.5px solid rgba(153, 160, 173, 0.35);
+        border-top-color: #99a0ad;
+        animation: splash-spin 0.7s linear infinite;
+      }
+      @keyframes splash-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <!-- Removed automatically once React renders into this node. -->
+      <div id="splash">
+        <div class="logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
+            <path
+              d="M12 2c-.5 0-1 .2-1.3.7C8.6 6 5 11.4 5 15a7 7 0 0014 0c0-3.6-3.6-9-5.7-12.3-.3-.5-.8-.7-1.3-.7z"
+            />
+          </svg>
+        </div>
+        <div class="spinner"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
