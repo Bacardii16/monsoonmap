@@ -181,8 +181,17 @@ export default function RoutePlannerPanel({ planner }) {
             fontWeight: 600,
             cursor: loading ? "default" : "pointer",
             opacity: loading ? 0.6 : 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 7,
           }}
         >
+          {loading && (
+            <svg className="mm-spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
+              <path d="M12 2a10 10 0 0110 10" strokeLinecap="round" />
+            </svg>
+          )}
           {loading ? "Finding routes…" : "Find safest route"}
         </button>
 
@@ -197,7 +206,7 @@ export default function RoutePlannerPanel({ planner }) {
                 <button
                   key={i}
                   onClick={() => setSelectedIndex(i)}
-                  className="mm-interactive"
+                  className="mm-interactive mm-fade-up"
                   style={{
                     textAlign: "left",
                     padding: "9px 10px",
@@ -205,6 +214,8 @@ export default function RoutePlannerPanel({ planner }) {
                     border: `1px solid ${isSelected ? "var(--accent)" : "var(--line)"}`,
                     background: isSelected ? "var(--card-2)" : "transparent",
                     cursor: "pointer",
+                    transition: "border-color 0.15s ease, background 0.15s ease",
+                    animationDelay: `${i * 60}ms`,
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, flexWrap: "wrap" }}>

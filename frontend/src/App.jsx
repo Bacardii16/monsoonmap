@@ -48,6 +48,7 @@ export default function App() {
   const [pendingAreaName, setPendingAreaName] = useState("");
   const [resolvingArea, setResolvingArea] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [justSubmitted, setJustSubmitted] = useState(false);
   const [toast, setToast] = useState(null);
   const [latestReportId, setLatestReportId] = useState(null);
   const [theme, setTheme] = useState(getInitialTheme);
@@ -169,14 +170,21 @@ export default function App() {
       await loadReports();
       setLatestReportId(created._id || created.id);
       setBurstRequest({ position: { lat: pendingLoc.lat, lng: pendingLoc.lng }, severity, ts: Date.now() });
-      setSheetOpen(false);
       setPendingLoc(null);
       setPendingAreaName("");
       showToast("Report submitted — thanks for helping others");
+      setSubmitting(false);
+      // Show the in-form success checkmark for a moment before closing the
+      // sheet, rather than the sheet just vanishing the instant the
+      // request resolves — gives the submission a beat to register.
+      setJustSubmitted(true);
+      setTimeout(() => {
+        setJustSubmitted(false);
+        setSheetOpen(false);
+      }, 900);
     } catch (err) {
       console.error(err);
       showToast("Something went wrong. Try again.", "error");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -412,6 +420,7 @@ export default function App() {
         onClearLocation={handleClearLocation}
         onSubmit={handleSubmit}
         submitting={submitting}
+        justSubmitted={justSubmitted}
       />
 
       <div

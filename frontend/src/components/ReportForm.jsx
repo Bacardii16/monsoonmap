@@ -6,6 +6,23 @@ const reportTypes = [
   { key: "pothole", label: "Pothole", icon: "🕳️" },
 ];
 
+// Small filled checkmark badge shown on whichever type/severity card is
+// currently selected — positioned top-right corner, pops in via the
+// mm-check-pop animation (see index.css) rather than just appearing.
+const checkBadgeStyle = {
+  position: "absolute",
+  top: -6,
+  right: -6,
+  width: 16,
+  height: 16,
+  borderRadius: "50%",
+  background: "var(--accent)",
+  border: "2px solid var(--card)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
 export default function ReportForm({
   open,
   onClose,
@@ -16,6 +33,7 @@ export default function ReportForm({
   onClearLocation,
   onSubmit,
   submitting,
+  justSubmitted,
 }) {
   const [type, setType] = useState("waterlogging");
   const [severity, setSeverity] = useState(null);
@@ -125,6 +143,45 @@ export default function ReportForm({
             <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
           </svg>
         </button>
+
+        {justSubmitted && (
+          <div
+            className="mm-fade-in"
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: 18,
+              background: "linear-gradient(180deg, var(--card-2) 0%, var(--card) 12%)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+              zIndex: 10,
+            }}
+          >
+            <div
+              className="mm-check-pop"
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                background: "var(--brand)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 8px 22px var(--glow)",
+              }}
+            >
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
+                <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div style={{ fontFamily: "'Newsreader', serif", fontSize: 17, fontWeight: 600, color: "var(--ink)" }}>
+              Report submitted
+            </div>
+          </div>
+        )}
         <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 19, margin: "0 12px 4px 0" }}>
           {type === "pothole" ? "Report a pothole" : "Report waterlogging"}
         </h2>
@@ -149,6 +206,7 @@ export default function ReportForm({
                 tabIndex={0}
                 className="mm-select-card"
                 style={{
+                  position: "relative",
                   border: `1.5px solid ${type === t.key ? "var(--accent)" : "var(--line)"}`,
                   background: type === t.key ? "var(--card-2)" : "var(--card)",
                   boxShadow: type === t.key ? "0 0 0 3px rgba(59,130,246,0.24)" : "none",
@@ -160,10 +218,19 @@ export default function ReportForm({
                   cursor: "pointer",
                   fontSize: 13,
                   fontWeight: 500,
+                  transition: "border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease",
+                  transform: type === t.key ? "scale(1.02)" : "scale(1)",
                 }}
               >
                 <span aria-hidden="true">{t.icon}</span>
                 {t.label}
+                {type === t.key && (
+                  <span aria-hidden="true" className="mm-check-pop" style={checkBadgeStyle}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2">
+                      <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -254,6 +321,7 @@ export default function ReportForm({
                 tabIndex={0}
                 className="mm-select-card"
                 style={{
+                  position: "relative",
                   border: `1.5px solid ${severity === s.key ? "var(--accent)" : "var(--line)"}`,
                   background: severity === s.key ? "var(--card-2)" : "var(--card)",
                   boxShadow: severity === s.key ? "0 0 0 3px rgba(59,130,246,0.24)" : "none",
@@ -265,10 +333,19 @@ export default function ReportForm({
                   cursor: "pointer",
                   fontSize: 13,
                   fontWeight: 500,
+                  transition: "border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease",
+                  transform: severity === s.key ? "scale(1.02)" : "scale(1)",
                 }}
               >
                 <span style={{ width: 9, height: 9, borderRadius: "50%", background: s.color }} />
                 {s.label}
+                {severity === s.key && (
+                  <span aria-hidden="true" className="mm-check-pop" style={checkBadgeStyle}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2">
+                      <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                )}
               </div>
             ))}
           </div>
