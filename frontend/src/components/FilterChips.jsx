@@ -11,6 +11,7 @@ function ChipRow({ items, active, onChange, ariaLabel }) {
     <div
       role="tablist"
       aria-label={ariaLabel}
+      className="mm-filterchips-row"
       style={{
         display: "flex",
         flexWrap: "wrap",

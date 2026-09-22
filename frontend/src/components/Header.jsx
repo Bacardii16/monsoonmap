@@ -49,7 +49,7 @@ export default function Header({ reportCount, onShowGlobe, theme, onToggleTheme 
 
   return (
     <header
-      className="mm-fade-up"
+      className="mm-fade-up mm-header"
       style={{
         position: "relative",
         overflow: "hidden",

@@ -100,6 +100,7 @@ export default function StatsBar({ reports, loading }) {
   if (loading) {
     return (
       <div
+        className="mm-statsbar-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -122,7 +123,7 @@ export default function StatsBar({ reports, loading }) {
 
   return (
     <div
-      className="mm-fade-up"
+      className="mm-fade-up mm-statsbar-grid"
       style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr",

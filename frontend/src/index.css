@@ -173,6 +173,14 @@ button {
   scrollbar-color: var(--line) transparent;
 }
 
+/* Floating map buttons (recenter, hazard-check, legend toggle) read this
+   for their width/height instead of a hardcoded pixel value — kept as a
+   variable so the mobile breakpoint below can bump touch-target size in
+   one place rather than editing each button. */
+:root {
+  --fab-size: 34px;
+}
+
 .mm-map-area {
   flex: 1;
   min-width: 0;
@@ -186,13 +194,48 @@ button {
   .mm-sidebar {
     width: 100%;
     max-width: none;
-    max-height: 46vh;
+    /* A bit more room than desktop's proportional sizing would suggest —
+       otherwise the recent-reports list barely shows 1-2 rows before the
+       map takes over the rest of the screen. */
+    max-height: 54vh;
     border-right: none;
     border-bottom: 1px solid var(--line);
   }
   .mm-map-area {
     flex: 1;
     min-height: 0;
+  }
+
+  /* Touch targets grow from mouse-sized (34px) to a size closer to the
+     ~40-44px Apple/Google both recommend as a comfortable tap target. */
+  :root {
+    --fab-size: 40px;
+  }
+
+  /* Trims the sidebar's own vertical padding at each section so more of
+     the limited mobile height goes to actual content (the report list)
+     instead of whitespace between sections. Horizontal padding also
+     tightens slightly to match. Needs !important since these override
+     inline styles set directly on each component. */
+  .mm-header {
+    padding: 12px 14px 10px !important;
+  }
+  .mm-statsbar-grid {
+    padding: 10px 14px 8px !important;
+  }
+  .mm-filterchips-row {
+    padding: 0 14px !important;
+  }
+
+  /* Notched phones (the iPhone "island", home-indicator area): keeps the
+     header clear of the notch at the top, and gives bottom-pinned map
+     controls (legend, zoom, attribution) breathing room above the home
+     indicator, instead of sitting flush against either. */
+  .mm-header {
+    padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+  }
+  .leaflet-bottom {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 
