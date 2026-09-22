@@ -188,22 +188,77 @@ button {
 }
 
 @media (max-width: 860px) {
+  /* Map takes the full screen on mobile — the sidebar is no longer
+     stacked above it, it becomes an off-canvas drawer instead (below). */
   .mm-layout {
-    flex-direction: column;
+    flex-direction: row;
   }
   .mm-sidebar {
-    width: 100%;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(320px, 86vw);
     max-width: none;
-    /* A bit more room than desktop's proportional sizing would suggest —
-       otherwise the recent-reports list barely shows 1-2 rows before the
-       map takes over the rest of the screen. */
-    max-height: 54vh;
-    border-right: none;
-    border-bottom: 1px solid var(--line);
+    max-height: none;
+    z-index: 900;
+    border-right: 1px solid var(--line);
+    border-bottom: none;
+    box-shadow: 8px 0 28px rgba(0, 0, 0, 0.45);
+    transform: translateX(0);
+    /* Overrides the desktop collapse rule below (same specificity, but
+       this block comes later in the file, so it wins in the cascade). */
+    transition: transform 0.3s ease;
+  }
+  .mm-sidebar.mm-sidebar-collapsed {
+    width: min(320px, 86vw);
+    min-width: 0;
+    transform: translateX(-100%);
   }
   .mm-map-area {
     flex: 1;
+    width: 100%;
     min-height: 0;
+  }
+  /* Replaced by the hamburger button rendered on the map itself (see
+     mm-hamburger-btn) — the edge-of-sidebar chevron tab doesn't make
+     sense once the sidebar is an overlay drawer rather than an in-flow
+     panel with a visible edge to dock a tab against. */
+  .mm-sidebar-toggle {
+    display: none;
+  }
+
+  /* Dimmed backdrop behind the open drawer — tapping it closes the
+     drawer, same as tapping the hamburger button again. Hidden entirely
+     on desktop, where the sidebar is in-flow rather than an overlay. */
+  .mm-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 850;
+    animation: mm-fade-in 0.2s ease;
+  }
+
+  /* Menu button that opens the drawer — sits where the desktop's sidebar
+     edge would otherwise be, at the map's top-left corner. */
+  .mm-hamburger-btn {
+    display: flex;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 500;
+    width: var(--fab-size, 40px);
+    height: var(--fab-size, 40px);
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  }
+  /* Search bar shifts right to leave room for the hamburger button
+     beside it, instead of the two overlapping. */
+  .mm-searchbar-wrap {
+    left: calc(var(--fab-size, 40px) + 20px) !important;
   }
 
   /* Touch targets grow from mouse-sized (34px) to a size closer to the
@@ -212,19 +267,17 @@ button {
     --fab-size: 40px;
   }
 
-  /* Trims the sidebar's own vertical padding at each section so more of
-     the limited mobile height goes to actual content (the report list)
-     instead of whitespace between sections. Horizontal padding also
-     tightens slightly to match. Needs !important since these override
-     inline styles set directly on each component. */
+  /* Trims the sidebar's own vertical padding at each section — matters
+     less now that the drawer has the full screen height to work with,
+     but still keeps things from feeling loose on a narrow panel. */
   .mm-header {
-    padding: 12px 14px 10px !important;
+    padding: 14px 16px 12px !important;
   }
   .mm-statsbar-grid {
-    padding: 10px 14px 8px !important;
+    padding: 12px 16px 10px !important;
   }
   .mm-filterchips-row {
-    padding: 0 14px !important;
+    padding: 0 16px !important;
   }
 
   /* Notched phones (the iPhone "island", home-indicator area): keeps the
@@ -232,11 +285,21 @@ button {
      controls (legend, zoom, attribution) breathing room above the home
      indicator, instead of sitting flush against either. */
   .mm-header {
-    padding-top: calc(12px + env(safe-area-inset-top, 0px)) !important;
+    padding-top: calc(14px + env(safe-area-inset-top, 0px)) !important;
   }
   .leaflet-bottom {
     margin-bottom: env(safe-area-inset-bottom, 0px);
   }
+}
+
+/* Hidden by default (desktop) — only shown inside the mobile media query
+   above, since the desktop sidebar-edge chevron tab covers this role
+   there instead. */
+.mm-hamburger-btn {
+  display: none;
+}
+.mm-sidebar-backdrop {
+  display: none;
 }
 
 /* focus visibility for accessibility */

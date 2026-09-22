@@ -416,7 +416,7 @@ function SearchBar({ mapRef, onDestination }) {
   }
 
   return (
-    <div style={{ position: "absolute", top: 10, left: 10, right: 54, zIndex: 500 }}>
+    <div className="mm-searchbar-wrap" style={{ position: "absolute", top: 10, left: 10, right: 54, zIndex: 500 }}>
       <div style={{ position: "relative" }}>
         <span
           style={{
@@ -1172,6 +1172,7 @@ function MapBridge({ mapRef, onZoomChange, onMapClick }) {
 }
 
 export default function MapView({
+  onOpenSidebar,
   reports,
   filterLabel,
   placingMode,
@@ -1384,6 +1385,16 @@ export default function MapView({
           })}
       </MapContainer>
 
+      <button
+        onClick={onOpenSidebar}
+        aria-label="Open sidebar menu"
+        title="Menu"
+        className="mm-glass mm-interactive mm-hamburger-btn"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="2.2">
+          <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+        </svg>
+      </button>
       <SearchBar mapRef={mapRef} onDestination={handleDestination} />
       <RecenterButton mapRef={mapRef} />
       <NearbyHazardCheck reports={reports} mapRef={mapRef} />

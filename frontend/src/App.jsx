@@ -42,7 +42,12 @@ export default function App() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Desktop: sidebar starts open (normal in-flow panel). Mobile: starts
+  // closed (off-canvas drawer) — full-screen map by default, opened via
+  // the hamburger button rendered on the map (see MapView.jsx).
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 860px)").matches
+  );
   const [placingMode, setPlacingMode] = useState(false);
   const [pendingLoc, setPendingLoc] = useState(null);
   const [pendingAreaName, setPendingAreaName] = useState("");
@@ -288,6 +293,12 @@ export default function App() {
         </div>
       )}
 
+      {/* Only visible on mobile (see CSS) — clicking outside the open
+          drawer closes it, same as tapping the hamburger button again. */}
+      {!sidebarCollapsed && (
+        <div className="mm-sidebar-backdrop" onClick={() => setSidebarCollapsed(true)} />
+      )}
+
       <aside className={`mm-sidebar${sidebarCollapsed ? " mm-sidebar-collapsed" : ""}`}>
         <Header
           reportCount={reports.length}
@@ -373,6 +384,7 @@ export default function App() {
 
       <div className="mm-map-area">
         <MapView
+          onOpenSidebar={() => setSidebarCollapsed(false)}
           reports={filteredReports}
           filterLabel={activeFilterLabel}
           placingMode={placingMode}
