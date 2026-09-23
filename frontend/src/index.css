@@ -143,12 +143,6 @@ button {
   border-radius: 0 8px 8px 0;
 }
 
-@media (max-width: 860px) {
-  .mm-sidebar-toggle {
-    display: none;
-  }
-}
-
 .mm-sidebar::-webkit-scrollbar {
   width: 8px;
 }
@@ -187,6 +181,19 @@ button {
   position: relative;
 }
 
+/* Hidden by default (desktop) — only shown inside the mobile media query
+   below, since the desktop sidebar-edge chevron tab covers this role
+   there instead. Declared here, before that media query, so its
+   display:flex/block override actually takes effect on mobile — a plain
+   rule appearing later in the file always beats an earlier one at equal
+   specificity, media query or not. */
+.mm-hamburger-btn {
+  display: none;
+}
+.mm-sidebar-backdrop {
+  display: none;
+}
+
 @media (max-width: 860px) {
   /* Map takes the full screen on mobile — the sidebar is no longer
      stacked above it, it becomes an off-canvas drawer instead (below). */
@@ -197,6 +204,7 @@ button {
     position: fixed;
     inset: 0 auto 0 0;
     width: min(320px, 86vw);
+    min-width: 0;
     max-width: none;
     max-height: none;
     z-index: 900;
@@ -292,15 +300,6 @@ button {
   }
 }
 
-/* Hidden by default (desktop) — only shown inside the mobile media query
-   above, since the desktop sidebar-edge chevron tab covers this role
-   there instead. */
-.mm-hamburger-btn {
-  display: none;
-}
-.mm-sidebar-backdrop {
-  display: none;
-}
 
 /* focus visibility for accessibility */
 button:focus-visible,
