@@ -71,9 +71,42 @@ function latLngToVector3(lat, lng, radius) {
  * Earth. Calls onArrive() once the dive completes so the caller can swap
  * in the real flat map underneath.
  */
+// Reveals `text` one character at a time while `active` is true, resetting
+// to empty when it becomes inactive (so re-activating replays it from the
+// start rather than resuming mid-word). Falls back to showing the full
+// text instantly when prefersReducedMotion is true, matching how the rest
+// of this component treats reduced motion — the words themselves aren't
+// "motion" in the sense that matters here, but revealing them via a timed
+// animation is.
+function Typewriter({ text, active, speed = 28, reducedMotion }) {
+  const [count, setCount] = useState(reducedMotion ? text.length : 0);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      setCount(text.length);
+      return;
+    }
+    if (!active) {
+      setCount(0);
+      return;
+    }
+    let i = 0;
+    setCount(0);
+    const id = setInterval(() => {
+      i += 1;
+      setCount(i);
+      if (i >= text.length) clearInterval(id);
+    }, speed);
+    return () => clearInterval(id);
+  }, [active, text, speed, reducedMotion]);
+
+  return <>{text.slice(0, count)}</>;
+}
+
 export default function GlobeIntro({ onArrive, theme }) {
   const wrapRef = useRef(null);
   const globeRef = useRef(null);
+  const parallaxRef = useRef(null);
   const arrivedRef = useRef(false);
   // Raw [lng, lat] ring for India's border, populated once (if ever) by the
   // fetch effect below. Read by the scene-setup effect's animation loop,
@@ -138,6 +171,29 @@ export default function GlobeIntro({ onArrive, theme }) {
   const reduceMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Subtle parallax: the globe/star canvas shifts a few px opposite the
+  // cursor as it moves, giving the scene a sense of depth rather than
+  // feeling like a flat backdrop. Skipped on touch devices (no cursor)
+  // and under reduced motion, same as the rest of this component's
+  // effects. Applied via direct style writes (not React state) since
+  // mousemove fires far more often than a re-render should happen.
+  useEffect(() => {
+    if (reduceMotion) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+
+    function handleMove(e) {
+      const rect = wrap.getBoundingClientRect();
+      const relX = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+      const relY = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+      const el = parallaxRef.current;
+      if (el) el.style.transform = `translate(${-relX * 10}px, ${-relY * 10}px)`;
+    }
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, [reduceMotion]);
 
   // Size the canvas to whatever container it's placed in (the app's
   // mobile-width shell), rather than the full browser window.
@@ -639,6 +695,10 @@ export default function GlobeIntro({ onArrive, theme }) {
       />
 
       <div className="mm-globe-enter" style={{ position: "absolute", inset: 0 }}>
+        <div
+          ref={parallaxRef}
+          style={{ position: "absolute", inset: 0, transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)" }}
+        >
         <Globe
           ref={globeRef}
           width={size.width}
@@ -662,6 +722,7 @@ export default function GlobeIntro({ onArrive, theme }) {
           ringRepeatPeriod={900}
           onGlobeReady={() => setGlobeReady(true)}
         />
+        </div>
       </div>
 
       {/* Vignette so the globe reads as sitting in a defined space rather
@@ -792,7 +853,7 @@ export default function GlobeIntro({ onArrive, theme }) {
               transition: "opacity 0.4s ease",
             }}
           >
-            Locating India…
+            <Typewriter text="Locating India…" active={phase === "spin"} reducedMotion={reduceMotion} />
           </div>
           <div
             style={{
@@ -805,7 +866,7 @@ export default function GlobeIntro({ onArrive, theme }) {
               transition: "opacity 0.4s ease",
             }}
           >
-            Arriving over India…
+            <Typewriter text="Arriving over India…" active={phase === "dive"} reducedMotion={reduceMotion} />
           </div>
         </div>
       </div>

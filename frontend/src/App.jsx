@@ -7,6 +7,7 @@ import ReportsList from "./components/ReportsList.jsx";
 import ReportForm from "./components/ReportForm.jsx";
 import GlobeIntro from "./components/GlobeIntro.jsx";
 import { fetchReports, createReport, upvoteReport, clearReport, reverseGeocode } from "./api.js";
+import { magneticHandlers, cursorEffectsEnabled } from "./magnetic.js";
 
 const INTRO_FADE_MS = 450;
 const THEME_STORAGE_KEY = "monsoonmap-theme";
@@ -83,6 +84,46 @@ export default function App() {
     // Refresh every 60s so the map stays live
     const interval = setInterval(loadReports, 60000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Soft glow that follows the cursor across the whole app. Positioned
+  // imperatively via direct style writes (not React state) since
+  // mousemove fires far too often to re-render on — this stays cheap
+  // regardless of how long the app's been open. Skipped entirely on
+  // touch devices and under prefers-reduced-motion (cursorEffectsEnabled
+  // covers both), so this effect no-ops immediately there.
+  const cursorGlowRef = useRef(null);
+  useEffect(() => {
+    if (!cursorEffectsEnabled) return;
+    function handleMove(e) {
+      const el = cursorGlowRef.current;
+      if (el) el.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+    }
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, []);
+
+  // Click ripple for every .mm-interactive element app-wide (previously
+  // only map pins had this). Delegated at the document level rather than
+  // adding a handler to every button individually — the ripple itself is
+  // appended to <body>, positioned at the click's exact page coordinates,
+  // rather than nested inside the clicked element, so it never needs that
+  // element to have overflow:hidden (several already rely on visible
+  // overflow for things like the checkmark badges in ReportForm).
+  useEffect(() => {
+    if (!cursorEffectsEnabled) return;
+    function handleClick(e) {
+      const target = e.target.closest(".mm-interactive");
+      if (!target) return;
+      const ripple = document.createElement("span");
+      ripple.className = "mm-global-ripple";
+      ripple.style.left = `${e.clientX}px`;
+      ripple.style.top = `${e.clientY}px`;
+      document.body.appendChild(ripple);
+      ripple.addEventListener("animationend", () => ripple.remove());
+    }
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
   }, []);
 
   // Reflect the theme choice on <html> (so plain CSS variables can react to
@@ -278,6 +319,7 @@ export default function App() {
 
   return (
     <div className="mm-layout">
+      {cursorEffectsEnabled && <div ref={cursorGlowRef} className="mm-cursor-glow" aria-hidden="true" />}
       {introPhase !== "done" && (
         <div
           style={{
@@ -319,6 +361,7 @@ export default function App() {
             onClick={() => setSheetOpen(true)}
             aria-label="Report waterlogging or a pothole"
             className="mm-interactive mm-sheen-cta"
+            {...magneticHandlers(10)}
             style={{
               width: "100%",
               background: "linear-gradient(135deg, var(--brand), var(--accent-2))",

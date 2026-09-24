@@ -7,6 +7,7 @@ import { searchPlaces } from "../api.js";
 import { fetchCurrentWeather } from "../weather.js";
 import { useRoutePlanner } from "../routePlanning.js";
 import RoutePlannerPanel from "./RoutePlannerPanel.jsx";
+import { magneticHandlers } from "../magnetic.js";
 import {
   INDIA_CENTER,
   INDIA_BOUNDS_SW,
@@ -215,6 +216,7 @@ function NearbyHazardCheck({ reports, mapRef }) {
         aria-label="Check for hazards near my current location"
         title="Check hazards near me"
         className="mm-glass mm-interactive"
+        {...magneticHandlers(8)}
         style={{
           position: "absolute",
           top: 98,
@@ -281,6 +283,7 @@ function RecenterButton({ mapRef }) {
       }}
       aria-label="Recenter map on India"
       className="mm-glass mm-interactive"
+      {...magneticHandlers(8)}
       style={{
         position: "absolute",
         top: 58,

@@ -497,6 +497,53 @@ a:focus-visible {
   animation: mm-toast-drain 2.6s linear forwards;
 }
 
+/* Soft glow that trails the cursor across the whole app — a fixed-position
+   element positioned via transform in App.jsx's mousemove handler rather
+   than left/top, since transform is compositor-only (no layout
+   recalculation on every mouse move, unlike left/top). The transition
+   below is what gives it a gentle lag rather than snapping exactly to the
+   cursor. pointer-events:none so it never intercepts clicks. */
+.mm-cursor-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 260px;
+  margin-left: -130px;
+  margin-top: -130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 14%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+/* Click ripple for every .mm-interactive button app-wide — appended to
+   <body> at the exact click point (see App.jsx) rather than nested inside
+   the clicked element, so it works regardless of that element's own
+   overflow/positioning. */
+@keyframes mm-global-ripple {
+  from {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.5;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+.mm-global-ripple {
+  position: fixed;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 2000;
+  animation: mm-global-ripple 0.5s ease-out forwards;
+}
+
 /* Expanding ring shown briefly at a pin's location right when it's
    clicked — a "tap acknowledged" cue before the camera even starts flying
    there. */
