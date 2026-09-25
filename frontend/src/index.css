@@ -512,9 +512,17 @@ a:focus-visible {
   margin-left: -130px;
   margin-top: -130px;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 14%, transparent) 0%, transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 55%, transparent) 0%, transparent 70%);
   pointer-events: none;
-  z-index: -1;
+  z-index: 2500;
+  /* "screen" only ever lightens what's underneath, never darkens — so it
+     reads as a soft glow sitting on top of the sidebar/map without ever
+     obscuring text or buttons, unlike a plain semi-transparent overlay
+     would. This also means it needed to move to a very high z-index (the
+     original z-index:-1 attempt tucked it fully behind the sidebar and
+     map, which are both fully opaque and cover the entire screen — so it
+     was rendering, just never visible at all). */
+  mix-blend-mode: screen;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
