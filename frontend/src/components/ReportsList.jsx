@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import { SEVERITY_COLORS, SEVERITY_LABELS } from "../constants.js";
+import { tiltHandlers } from "../magnetic.js";
 
 function timeAgo(dateStr) {
   const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -19,8 +21,43 @@ export default function ReportsList({ reports, onSelect, activeId, loading, filt
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
 
+  // Items fade/slide in as they're scrolled into view, rather than all
+  // animating once on mount regardless of whether they're actually
+  // visible yet (which is what a plain CSS mount animation would do —
+  // items below the fold would finish animating before the user ever
+  // scrolled down to see it happen). Re-runs whenever the visible list
+  // changes shape (filter switch, new/removed reports) so newly-added
+  // rows get observed too. Reveals each item once and stops observing
+  // it — this is an entrance effect, not something that should replay
+  // every time you scroll back up past an item.
+  const containerRef = useRef(null);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const items = container.querySelectorAll(".mm-scroll-reveal:not(.mm-revealed)");
+    if (items.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("mm-revealed");
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      { root: container, threshold: 0.15 }
+    );
+    items.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [sorted.length, filterKey]);
+
   return (
-    <div className="mm-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 12px 20px" }}>
+    <div
+      ref={containerRef}
+      className="mm-scroll"
+      style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 12px 20px" }}
+    >
       <div
         style={{
           fontSize: 11,
@@ -77,7 +114,8 @@ export default function ReportsList({ reports, onSelect, activeId, loading, filt
             // set.
             key={`${filterKey}-${id}`}
             onClick={() => onSelect(r)}
-            className="mm-list-item mm-fade-up"
+            className="mm-list-item mm-scroll-reveal"
+            {...tiltHandlers(3)}
             style={{
               display: "flex",
               alignItems: "center",
@@ -92,7 +130,6 @@ export default function ReportsList({ reports, onSelect, activeId, loading, filt
               boxShadow: isActive ? "none" : "0 1px 3px rgba(0,0,0,0.15)",
               cursor: "pointer",
               marginBottom: 6,
-              animationDelay: `${Math.min(i, 8) * 30}ms`,
             }}
           >
             <span

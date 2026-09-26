@@ -92,12 +92,33 @@ export default function App() {
   // regardless of how long the app's been open. Skipped entirely on
   // touch devices and under prefers-reduced-motion (cursorEffectsEnabled
   // covers both), so this effect no-ops immediately there.
-  const cursorGlowRef = useRef(null);
+  // Sparkle trail following the cursor — small fading dot particles
+  // spawned as the mouse moves, rather than one persistent glow blob.
+  // Throttled to one spawn per ~55ms regardless of how often mousemove
+  // actually fires (which can be well over 100/sec) — enough to read as a
+  // continuous trail without spawning (and having to garbage-collect) an
+  // excessive number of DOM nodes.
+  const lastSparkleRef = useRef(0);
   useEffect(() => {
     if (!cursorEffectsEnabled) return;
     function handleMove(e) {
-      const el = cursorGlowRef.current;
-      if (el) el.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+      const now = performance.now();
+      if (now - lastSparkleRef.current < 55) return;
+      lastSparkleRef.current = now;
+
+      const sparkle = document.createElement("span");
+      sparkle.className = "mm-cursor-sparkle";
+      // Small random offset and size so the trail looks organic rather
+      // than a mechanically even row of identical dots.
+      const offsetX = (Math.random() - 0.5) * 14;
+      const offsetY = (Math.random() - 0.5) * 14;
+      const size = 4 + Math.random() * 4;
+      sparkle.style.left = `${e.clientX + offsetX}px`;
+      sparkle.style.top = `${e.clientY + offsetY}px`;
+      sparkle.style.width = `${size}px`;
+      sparkle.style.height = `${size}px`;
+      document.body.appendChild(sparkle);
+      sparkle.addEventListener("animationend", () => sparkle.remove());
     }
     window.addEventListener("mousemove", handleMove);
     return () => window.removeEventListener("mousemove", handleMove);
@@ -319,7 +340,6 @@ export default function App() {
 
   return (
     <div className="mm-layout">
-      {cursorEffectsEnabled && <div ref={cursorGlowRef} className="mm-cursor-glow" aria-hidden="true" />}
       {introPhase !== "done" && (
         <div
           style={{

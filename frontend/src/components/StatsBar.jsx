@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { tiltHandlers } from "../magnetic.js";
 
 const severityRank = { impassable: 4, difficult: 3, minor: 2, clear: 1 };
 const severityColor = {
@@ -133,7 +134,7 @@ export default function StatsBar({ reports, loading }) {
         animationDelay: "30ms",
       }}
     >
-      <div className="mm-stat-card" style={infoCardStyle}>
+      <div className="mm-stat-card" style={infoCardStyle} {...tiltHandlers(5)}>
         <div style={{ fontSize: 11, color: "var(--slate)", fontWeight: 500 }}>Cities covered</div>
         <div style={{ fontSize: 24, fontWeight: 700, color: "var(--ink)", marginTop: 2 }}>
           {displayedCities}
@@ -143,7 +144,7 @@ export default function StatsBar({ reports, loading }) {
           {potholeCount > 0 ? ` (${potholeCount} pothole${potholeCount === 1 ? "" : "s"})` : ""}
         </div>
       </div>
-      <div className="mm-stat-card" style={warnCardStyle}>
+      <div className="mm-stat-card" style={warnCardStyle} {...tiltHandlers(5)}>
         <div style={{ fontSize: 11, color: "var(--slate)", fontWeight: 500 }}>Worst waterlogging</div>
         {worst ? (
           <div

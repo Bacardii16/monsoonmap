@@ -36,3 +36,25 @@ export function magneticHandlers(strength = 10) {
     },
   };
 }
+
+// A subtle 3D tilt — the element rotates a few degrees in 3D as the
+// cursor moves across it, as if catching light. `maxDeg` caps how far it
+// can tilt; kept small (a handful of degrees) so it reads as a gentle
+// reactive sheen rather than a cartoonish flip. Like magneticHandlers,
+// writes directly to the DOM node rather than React state, and no-ops
+// entirely without a fine pointer or under reduced motion.
+export function tiltHandlers(maxDeg = 6) {
+  if (!cursorEffectsEnabled) return {};
+
+  return {
+    onMouseMove: (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const relX = (e.clientX - rect.left) / rect.width - 0.5;
+      const relY = (e.clientY - rect.top) / rect.height - 0.5;
+      e.currentTarget.style.transform = `perspective(500px) rotateX(${-relY * maxDeg}deg) rotateY(${relX * maxDeg}deg)`;
+    },
+    onMouseLeave: (e) => {
+      e.currentTarget.style.transform = "";
+    },
+  };
+}

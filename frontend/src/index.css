@@ -95,15 +95,46 @@ button {
   max-width: 420px;
   display: flex;
   flex-direction: column;
+  position: relative;
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  transition: border-color 0.25s ease, width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+}
+/* The actual background lives on this pseudo-element rather than directly
+   on .mm-sidebar, specifically so the slow hue-drift animation below can
+   target just the decorative gradient — animating it directly on
+   .mm-sidebar would also hue-shift every child (text, icons, photos)
+   sitting on top of it, which is not the intent. Negative z-index within
+   .mm-sidebar's own stacking context (it has position:relative above)
+   guarantees this paints behind all of the sidebar's actual content,
+   regardless of those children's own position/z-index values. */
+.mm-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   /* Faint dot-grid texture layered on top of the gradient (both in one
      shorthand — a separate background-image declaration after this would
      have replaced the gradient instead of layering over it) — fills the
      empty space between sections with subtle detail instead of a flat
      panel. */
   background: radial-gradient(circle, var(--line) 1px, transparent 1px) 0 0 / 22px 22px, var(--sidebar-gradient);
-  border-right: 1px solid var(--line);
-  overflow-y: auto;
-  transition: background 0.25s ease, border-color 0.25s ease, width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+  transition: background 0.25s ease;
+  animation: mm-hue-drift 50s ease-in-out infinite alternate;
+}
+@keyframes mm-hue-drift {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(14deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-sidebar::before {
+    animation: none;
+  }
 }
 
 /* Collapsed state: the whole sidebar shrinks to zero width rather than
@@ -387,6 +418,20 @@ a:focus-visible {
    white flash while tiles are still loading in. */
 .leaflet-container {
   background: var(--card);
+  /* A small water-drop cursor instead of the generic pointer/grab hand,
+     tying the map back into the app's own branding. !important because
+     Leaflet's own CSS also sets cursor rules on this same element (via
+     its .leaflet-grab class) at equal selector specificity — whichever
+     stylesheet happens to load second would otherwise win regardless of
+     which one actually makes more sense here. Skipped on touch devices,
+     which have no cursor to theme in the first place. */
+}
+@media (hover: hover) and (pointer: fine) {
+  .leaflet-container {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C12 2 4 11 4 16a8 8 0 0016 0c0-5-8-14-8-14z' fill='%234a9eff' stroke='%23ffffff' stroke-width='1.5'/%3E%3C/svg%3E")
+      13 24,
+      pointer !important;
+  }
 }
 
 /* Crosshair cursor while the user is in "place a report here" mode, so the
@@ -503,28 +548,29 @@ a:focus-visible {
    recalculation on every mouse move, unlike left/top). The transition
    below is what gives it a gentle lag rather than snapping exactly to the
    cursor. pointer-events:none so it never intercepts clicks. */
-.mm-cursor-glow {
+/* Sparkle trail particles — each one is a short-lived element spawned at
+   the cursor's position in App.jsx, sized/positioned randomly there, and
+   removed once this animation finishes. mix-blend-mode:screen so they
+   read as a bright glint rather than an opaque dot sitting on top of
+   whatever's underneath (sidebar, map, text). */
+@keyframes mm-cursor-sparkle {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(0) translateY(-14px);
+    opacity: 0;
+  }
+}
+.mm-cursor-sparkle {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 260px;
-  height: 260px;
-  margin-left: -130px;
-  margin-top: -130px;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 55%, transparent) 0%, transparent 70%);
+  background: radial-gradient(circle, #fff 0%, var(--accent) 45%, transparent 75%);
   pointer-events: none;
   z-index: 2500;
-  /* "screen" only ever lightens what's underneath, never darkens — so it
-     reads as a soft glow sitting on top of the sidebar/map without ever
-     obscuring text or buttons, unlike a plain semi-transparent overlay
-     would. This also means it needed to move to a very high z-index (the
-     original z-index:-1 attempt tucked it fully behind the sidebar and
-     map, which are both fully opaque and cover the entire screen — so it
-     was rendering, just never visible at all). */
   mix-blend-mode: screen;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
+  animation: mm-cursor-sparkle 0.6s ease-out forwards;
 }
 
 /* Click ripple for every .mm-interactive button app-wide — appended to
@@ -567,6 +613,21 @@ a:focus-visible {
 }
 .mm-click-ripple {
   animation: mm-click-ripple 0.5s ease-out forwards;
+}
+
+/* Report list rows start hidden/offset and transition in once an
+   IntersectionObserver (see ReportsList.jsx) marks them revealed — a
+   plain transition rather than a keyframe animation, since this needs to
+   sit in a held "hidden" state indefinitely until revealed, not just play
+   once on mount. */
+.mm-scroll-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.mm-scroll-reveal.mm-revealed {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Sidebar report-list rows: background eases in on hover, a slight lift
