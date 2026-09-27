@@ -131,11 +131,6 @@ button {
     filter: hue-rotate(14deg);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .mm-sidebar::before {
-    animation: none;
-  }
-}
 
 /* Collapsed state: the whole sidebar shrinks to zero width rather than
    just hiding — width transitions smoothly since it's an explicit
@@ -345,6 +340,32 @@ a:focus-visible {
   * {
     animation: none !important;
     transition: none !important;
+  }
+
+  /* These four are deliberately exempted from the blanket suppression
+     above — small, localized effects (a card tilting slightly, a sparkle
+     trail, a slow background color drift, list rows fading in as you
+     scroll) that this app's builder wants shown regardless of the
+     reduced-motion setting. Every other animation on the site — camera
+     flights, the globe intro, marker pulses, toasts, and so on — still
+     respects it via the blanket rule above; only these are carved out.
+     Needs its own selector + !important here since it's competing
+     against another !important rule on `*` — among competing !important
+     declarations, the more specific selector wins regardless of source
+     order, so a class selector here reliably beats the universal one
+     above. */
+  .mm-sidebar::before {
+    animation: mm-hue-drift 50s ease-in-out infinite alternate !important;
+  }
+  .mm-scroll-reveal {
+    transition: opacity 0.45s ease, transform 0.45s ease !important;
+  }
+  .mm-cursor-sparkle {
+    animation: mm-cursor-sparkle 0.6s ease-out forwards !important;
+  }
+  .mm-stat-card,
+  .mm-list-item {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease !important;
   }
 }
 

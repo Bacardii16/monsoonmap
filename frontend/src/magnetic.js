@@ -5,18 +5,17 @@
 // often to re-render on — this keeps it cheap regardless of how many
 // magnetic buttons are on screen at once.
 //
-// Skipped entirely on touch devices (no cursor to react to) and under
-// prefers-reduced-motion, both checked once via matchMedia rather than on
-// every move event.
+// Skipped entirely on touch devices (no cursor to react to).
 const supportsHover =
   typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-const reducedMotion =
-  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Whether cursor-reactive effects (this file's magnetic pull, the cursor
-// glow trail, the globe intro's parallax) should run at all — false on
-// touch devices (no cursor to react to) and under prefers-reduced-motion.
-export const cursorEffectsEnabled = supportsHover && !reducedMotion;
+// Whether cursor-reactive effects (this file's magnetic pull and tilt, the
+// cursor sparkle trail) should run at all — false only on touch devices,
+// which have no cursor to react to in the first place. Deliberately not
+// gated on prefers-reduced-motion — unlike this app's larger-scale motion
+// (camera flights, the globe intro), these are small, localized effects
+// the person building this app wants shown regardless of that setting.
+export const cursorEffectsEnabled = supportsHover;
 
 // `strength` controls how far the button can travel toward the cursor, in
 // pixels, at most — kept small (a handful of px) so it reads as a subtle
@@ -42,7 +41,7 @@ export function magneticHandlers(strength = 10) {
 // can tilt; kept small (a handful of degrees) so it reads as a gentle
 // reactive sheen rather than a cartoonish flip. Like magneticHandlers,
 // writes directly to the DOM node rather than React state, and no-ops
-// entirely without a fine pointer or under reduced motion.
+// entirely without a fine pointer (touch devices).
 export function tiltHandlers(maxDeg = 6) {
   if (!cursorEffectsEnabled) return {};
 
