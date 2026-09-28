@@ -86,53 +86,76 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Soft glow that follows the cursor across the whole app, plus a
-  // sparkle trail (below) spawned alongside it. Positioned imperatively
-  // via direct style writes (not React state) since mousemove fires far
-  // too often to re-render on — this stays cheap regardless of how long
-  // the app's been open. Skipped entirely on touch devices, which have no
-  // cursor for either effect to react to.
-  const cursorGlowRef = useRef(null);
+  // Custom cursor: a small dot that sticks exactly to the mouse, plus a
+  // ring that trails slightly behind. The ring grows over clickable things
+  // and shrinks on press. Updated once per frame via direct style writes
+  // (no React state), and the loop stops itself when the ring catches up.
+  const cursorDotRef = useRef(null);
+  const cursorRingRef = useRef(null);
   useEffect(() => {
     if (!cursorEffectsEnabled) return;
-    function handleMove(e) {
-      const el = cursorGlowRef.current;
-      if (el) el.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-    }
-    window.addEventListener("mousemove", handleMove);
-    return () => window.removeEventListener("mousemove", handleMove);
-  }, []);
+    const dot = cursorDotRef.current;
+    const ring = cursorRingRef.current;
+    if (!dot || !ring) return;
+    document.documentElement.classList.add("mm-custom-cursor");
 
-  // Sparkle trail following the cursor — small fading dot particles
-  // spawned as the mouse moves, rather than one persistent glow blob.
-  // Throttled to one spawn per ~55ms regardless of how often mousemove
-  // actually fires (which can be well over 100/sec) — enough to read as a
-  // continuous trail without spawning (and having to garbage-collect) an
-  // excessive number of DOM nodes.
-  const lastSparkleRef = useRef(0);
-  useEffect(() => {
-    if (!cursorEffectsEnabled) return;
-    function handleMove(e) {
-      const now = performance.now();
-      if (now - lastSparkleRef.current < 55) return;
-      lastSparkleRef.current = now;
+    const CLICKABLE = "button, a, select, label, .mm-interactive, .leaflet-marker-icon, [role='button']";
+    let x = 0, y = 0, rx = 0, ry = 0, frame = 0, shown = false;
 
-      const sparkle = document.createElement("span");
-      sparkle.className = "mm-cursor-sparkle";
-      // Small random offset and size so the trail looks organic rather
-      // than a mechanically even row of identical dots.
-      const offsetX = (Math.random() - 0.5) * 14;
-      const offsetY = (Math.random() - 0.5) * 14;
-      const size = 4 + Math.random() * 4;
-      sparkle.style.left = `${e.clientX + offsetX}px`;
-      sparkle.style.top = `${e.clientY + offsetY}px`;
-      sparkle.style.width = `${size}px`;
-      sparkle.style.height = `${size}px`;
-      document.body.appendChild(sparkle);
-      sparkle.addEventListener("animationend", () => sparkle.remove());
+    let last = 0;
+    function loop(t) {
+      // Smoothing based on real elapsed time, so the ring still catches up
+      // quickly when the page is running at a low frame rate.
+      const dt = last ? Math.min(t - last, 200) : 16;
+      last = t;
+      const k = 1 - Math.exp(-dt / 45);
+      rx += (x - rx) * k;
+      ry += (y - ry) * k;
+      ring.style.transform = `translate3d(${rx - 11}px, ${ry - 11}px, 0)`;
+      if (Math.abs(x - rx) > 0.1 || Math.abs(y - ry) > 0.1) {
+        frame = requestAnimationFrame(loop);
+      } else {
+        frame = 0;
+        last = 0;
+      }
     }
-    window.addEventListener("mousemove", handleMove);
-    return () => window.removeEventListener("mousemove", handleMove);
+    function handleMove(e) {
+      x = e.clientX;
+      y = e.clientY;
+      dot.style.transform = `translate3d(${x - 2}px, ${y - 2}px, 0)`;
+      if (!shown) {
+        rx = x;
+        ry = y;
+        shown = true;
+        dot.style.opacity = "1";
+        ring.style.opacity = "1";
+      }
+      if (!frame) frame = requestAnimationFrame(loop);
+    }
+    function handleOver(e) {
+      const hit = e.target instanceof Element && e.target.closest(CLICKABLE);
+      ring.classList.toggle("is-hover", !!hit);
+    }
+    function handleDown() { ring.classList.add("is-down"); }
+    function handleUp() { ring.classList.remove("is-down"); }
+    function handleLeave() { dot.style.opacity = "0"; ring.style.opacity = "0"; shown = false; }
+
+    // capture:true so no other element can block these events (e.g. a
+    // button calling stopPropagation would otherwise freeze the cursor).
+    window.addEventListener("mousemove", handleMove, { passive: true, capture: true });
+    window.addEventListener("mouseover", handleOver, { passive: true, capture: true });
+    window.addEventListener("mousedown", handleDown, true);
+    window.addEventListener("mouseup", handleUp, true);
+    document.documentElement.addEventListener("mouseleave", handleLeave);
+    return () => {
+      window.removeEventListener("mousemove", handleMove, true);
+      window.removeEventListener("mouseover", handleOver, true);
+      window.removeEventListener("mousedown", handleDown, true);
+      window.removeEventListener("mouseup", handleUp, true);
+      document.documentElement.removeEventListener("mouseleave", handleLeave);
+      if (frame) cancelAnimationFrame(frame);
+      document.documentElement.classList.remove("mm-custom-cursor");
+    };
   }, []);
 
   // Click ripple for every .mm-interactive element app-wide (previously
@@ -351,7 +374,12 @@ export default function App() {
 
   return (
     <div className="mm-layout">
-      {cursorEffectsEnabled && <div ref={cursorGlowRef} className="mm-cursor-glow" aria-hidden="true" />}
+      {cursorEffectsEnabled && (
+        <>
+          <div ref={cursorRingRef} className="mm-cursor-ring" aria-hidden="true" />
+          <div ref={cursorDotRef} className="mm-cursor-dot" aria-hidden="true" />
+        </>
+      )}
       {introPhase !== "done" && (
         <div
           style={{

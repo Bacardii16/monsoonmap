@@ -121,7 +121,6 @@ button {
      panel. */
   background: radial-gradient(circle, var(--line) 1px, transparent 1px) 0 0 / 22px 22px, var(--sidebar-gradient);
   transition: background 0.25s ease;
-  animation: mm-hue-drift 50s ease-in-out infinite alternate;
 }
 @keyframes mm-hue-drift {
   from {
@@ -354,17 +353,11 @@ a:focus-visible {
      declarations, the more specific selector wins regardless of source
      order, so a class selector here reliably beats the universal one
      above. */
-  .mm-sidebar::before {
-    animation: mm-hue-drift 50s ease-in-out infinite alternate !important;
-  }
   .mm-scroll-reveal {
     transition: opacity 0.45s ease, transform 0.45s ease !important;
   }
   .mm-cursor-sparkle {
     animation: mm-cursor-sparkle 0.6s ease-out forwards !important;
-  }
-  .mm-cursor-glow {
-    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1) !important;
   }
   .mm-stat-card,
   .mm-list-item {
@@ -552,33 +545,49 @@ a:focus-visible {
   animation: mm-toast-drain 2.6s linear forwards;
 }
 
-/* Soft glow that trails the cursor across the whole app — a fixed-position
-   element positioned via transform in App.jsx's mousemove handler rather
-   than left/top, since transform is compositor-only (no layout
-   recalculation on every mouse move, unlike left/top). The transition
-   below is what gives it a gentle lag rather than snapping exactly to the
-   cursor. pointer-events:none so it never intercepts clicks.
-   mix-blend-mode:screen means it only ever lightens what's underneath,
-   never darkens or obscures it — so it can sit on top of the sidebar and
-   map (z-index high enough to clear both) without washing out text or
-   buttons. An earlier version tucked it behind everything with a
-   negative z-index instead, which made it completely invisible, since
-   the sidebar and map are both fully opaque and cover the whole screen. */
-.mm-cursor-glow {
+/* Custom cursor: a dot that sticks to the mouse and a ring that trails it.
+   Both are fixed, moved by transform only (see App.jsx), and ignore clicks.
+   The ring's grow/shrink uses the separate `scale` property so it doesn't
+   fight the transform used for positioning. Native cursor is hidden while
+   this is active, except the crosshair in "place a report" mode and text
+   fields. */
+html.mm-custom-cursor,
+html.mm-custom-cursor * {
+  cursor: none;
+}
+html.mm-custom-cursor input,
+html.mm-custom-cursor textarea {
+  cursor: text;
+}
+.mm-cursor-dot,
+.mm-cursor-ring {
   position: fixed;
   top: 0;
   left: 0;
-  width: 90px;
-  height: 90px;
-  margin-left: -100px;
-  margin-top: -100px;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 45%, transparent) 0%, transparent 70%);
   pointer-events: none;
-  z-index: 2400;
-  mix-blend-mode: screen;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 0;
   will-change: transform;
+}
+.mm-cursor-dot {
+  width: 4px;
+  height: 4px;
+  background: var(--accent);
+  z-index: 2600;
+}
+.mm-cursor-ring {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--accent);
+  z-index: 2599;
+  transition: scale 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+}
+.mm-cursor-ring.is-hover {
+  scale: 1.6;
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+.mm-cursor-ring.is-down {
+  scale: 0.8;
 }
 
 /* Sparkle trail particles — each one is a short-lived element spawned at
@@ -602,7 +611,6 @@ a:focus-visible {
   background: radial-gradient(circle, #fff 0%, var(--accent) 45%, transparent 75%);
   pointer-events: none;
   z-index: 2500;
-  mix-blend-mode: screen;
   animation: mm-cursor-sparkle 0.6s ease-out forwards;
 }
 
@@ -622,8 +630,8 @@ a:focus-visible {
 }
 .mm-global-ripple {
   position: fixed;
-  width: 32px;
-  height: 32px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
   pointer-events: none;
@@ -897,8 +905,8 @@ a:focus-visible {
   position: absolute;
   top: 0;
   left: 0;
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   animation: mm-burst 650ms ease-out forwards;
 }
