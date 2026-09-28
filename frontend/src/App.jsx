@@ -111,7 +111,7 @@ export default function App() {
       const k = 1 - Math.exp(-dt / 45);
       rx += (x - rx) * k;
       ry += (y - ry) * k;
-      ring.style.transform = `translate3d(${rx - 11}px, ${ry - 11}px, 0)`;
+      ring.style.translate = `${rx - 11}px ${ry - 11}px`;
       if (Math.abs(x - rx) > 0.1 || Math.abs(y - ry) > 0.1) {
         frame = requestAnimationFrame(loop);
       } else {

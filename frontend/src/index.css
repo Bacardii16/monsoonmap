@@ -580,6 +580,7 @@ html.mm-custom-cursor textarea {
   height: 22px;
   border: 1.5px solid var(--accent);
   z-index: 2599;
+  will-change: translate, scale;
   transition: scale 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
 }
 .mm-cursor-ring.is-hover {
