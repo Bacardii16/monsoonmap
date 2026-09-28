@@ -568,8 +568,8 @@ a:focus-visible {
   position: fixed;
   top: 0;
   left: 0;
-  width: 200px;
-  height: 200px;
+  width: 90px;
+  height: 90px;
   margin-left: -100px;
   margin-top: -100px;
   border-radius: 50%;
