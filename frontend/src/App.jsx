@@ -86,12 +86,23 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Soft glow that follows the cursor across the whole app. Positioned
-  // imperatively via direct style writes (not React state) since
-  // mousemove fires far too often to re-render on — this stays cheap
-  // regardless of how long the app's been open. Skipped entirely on
-  // touch devices and under prefers-reduced-motion (cursorEffectsEnabled
-  // covers both), so this effect no-ops immediately there.
+  // Soft glow that follows the cursor across the whole app, plus a
+  // sparkle trail (below) spawned alongside it. Positioned imperatively
+  // via direct style writes (not React state) since mousemove fires far
+  // too often to re-render on — this stays cheap regardless of how long
+  // the app's been open. Skipped entirely on touch devices, which have no
+  // cursor for either effect to react to.
+  const cursorGlowRef = useRef(null);
+  useEffect(() => {
+    if (!cursorEffectsEnabled) return;
+    function handleMove(e) {
+      const el = cursorGlowRef.current;
+      if (el) el.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+    }
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, []);
+
   // Sparkle trail following the cursor — small fading dot particles
   // spawned as the mouse moves, rather than one persistent glow blob.
   // Throttled to one spawn per ~55ms regardless of how often mousemove
@@ -340,6 +351,7 @@ export default function App() {
 
   return (
     <div className="mm-layout">
+      {cursorEffectsEnabled && <div ref={cursorGlowRef} className="mm-cursor-glow" aria-hidden="true" />}
       {introPhase !== "done" && (
         <div
           style={{
