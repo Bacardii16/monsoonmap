@@ -152,7 +152,7 @@ export default function TourGuide({ active, onClose, onOpenSidebar, onCloseSideb
   // manual override. Must sit above the early return below — all hooks
   // in a component have to run on every render, in the same order, so a
   // hook can never come after a conditional `return`.
-  const AUTO_ADVANCE_MS = 4500;
+  const AUTO_ADVANCE_MS = 4000;
   useEffect(() => {
     if (!active) return;
     const t = setTimeout(next, AUTO_ADVANCE_MS);
