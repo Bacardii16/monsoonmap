@@ -24,35 +24,33 @@ real time:
   have it.
 
 ## Project structure
-```
+
 monsoonmap/
 ├── backend/     Node.js + Express + MongoDB REST API
 └── frontend/    React + Vite + Google Maps client
-```
+
 
 ## Running it locally
 
 **Backend** (Terminal 1):
-```
+
 cd backend
 npm install
 cp .env.example .env
 npm run dev
 npm run seed:potholes   # optional: preload known pothole hotspots
-```
+
 
 **Frontend** (Terminal 2):
-```
+
 cd frontend
 npm install
 npm run dev
-```
+
 
 Then open `http://localhost:5173`.
 
-See `backend/README.md` for full API documentation and design notes, and
-`exports/README.md` for exporting live reports (waterlogging + potholes) to
-Google Earth as an auto-refreshing KML.
+
 
 ## Design system
 - **Color**: cool rain-washed palette (`#F4F6F5` background, `#146C6A` brand

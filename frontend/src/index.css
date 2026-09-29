@@ -553,11 +553,11 @@ a:focus-visible {
    fields. */
 html.mm-custom-cursor,
 html.mm-custom-cursor * {
-  cursor: none;
+  cursor: none !important;
 }
 html.mm-custom-cursor input,
 html.mm-custom-cursor textarea {
-  cursor: text;
+  cursor: text !important;
 }
 .mm-cursor-dot,
 .mm-cursor-ring {
