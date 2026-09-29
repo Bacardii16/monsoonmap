@@ -6,6 +6,7 @@ import MapView from "./components/MapView.jsx";
 import ReportsList from "./components/ReportsList.jsx";
 import ReportForm from "./components/ReportForm.jsx";
 import GlobeIntro from "./components/GlobeIntro.jsx";
+import TourGuide, { TOUR_STORAGE_KEY } from "./components/TourGuide.jsx";
 import { fetchReports, createReport, upvoteReport, clearReport, reverseGeocode } from "./api.js";
 import { magneticHandlers, cursorEffectsEnabled } from "./magnetic.js";
 
@@ -78,6 +79,25 @@ export default function App() {
   function handleShowGlobe() {
     setIntroPhase("showing");
   }
+
+  // Auto-starts once, for anyone who hasn't seen it before (tracked in
+  // localStorage) — delayed until the globe intro has actually finished,
+  // so it never competes with that, and given a beat afterward so the map
+  // doesn't feel like it's being interrupted the instant it appears.
+  const [tourActive, setTourActive] = useState(false);
+  useEffect(() => {
+    if (introPhase !== "done") return;
+    let seen = false;
+    try {
+      seen = window.localStorage.getItem(TOUR_STORAGE_KEY) === "1";
+    } catch {
+      // Private browsing / storage disabled — treat as unseen; worst case
+      // the tour offers itself again next visit instead of persisting.
+    }
+    if (seen) return;
+    const t = setTimeout(() => setTourActive(true), 700);
+    return () => clearTimeout(t);
+  }, [introPhase]);
 
   useEffect(() => {
     loadReports();
@@ -405,6 +425,7 @@ export default function App() {
         <Header
           reportCount={reports.length}
           onShowGlobe={handleShowGlobe}
+          onReplayTour={() => setTourActive(true)}
           theme={theme}
           onToggleTheme={toggleTheme}
         />
@@ -524,6 +545,13 @@ export default function App() {
           </div>
         )}
       </div>
+
+      <TourGuide
+        active={tourActive}
+        onClose={() => setTourActive(false)}
+        onOpenSidebar={() => setSidebarCollapsed(false)}
+        onCloseSidebar={() => setSidebarCollapsed(true)}
+      />
 
       <ReportForm
         open={sheetOpen}

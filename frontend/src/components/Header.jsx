@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 const INDIA_EARTH_URL =
   "https://earth.google.com/web/@22.5937,78.9629,0a,22000000d,35y,0h,0t,0r";
 
-export default function Header({ reportCount, onShowGlobe, theme, onToggleTheme }) {
+export default function Header({ reportCount, onShowGlobe, onReplayTour, theme, onToggleTheme }) {
   const isLight = theme === "light";
   // The icon shown/rotated is decoupled from the real theme so the swap can
   // happen at the midpoint of a rotation instead of an instant snap — see
@@ -198,6 +198,21 @@ export default function Header({ reportCount, onShowGlobe, theme, onToggleTheme 
                   </svg>
                 )}
               </span>
+            </button>
+          )}
+          {onReplayTour && (
+            <button
+              onClick={onReplayTour}
+              aria-label="Replay the app tour"
+              title="Show me around"
+              className="mm-interactive"
+              style={iconButtonStyle}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M9.5 9.5a2.5 2.5 0 114 2.1c-.7.5-1.5 1-1.5 2.1" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none" />
+              </svg>
             </button>
           )}
         </div>
