@@ -85,18 +85,34 @@ function useTargetRect(selector, dependsOnSidebar) {
       setRect(el ? el.getBoundingClientRect() : null);
     }
 
+    // Scroll fires far more often than the browser can usefully re-render
+    // (every pixel, sometimes dozens of times a frame). Calling measure()
+    // straight from the listener re-ran getBoundingClientRect + setState on
+    // every single one of those events, which is what made the tour feel
+    // laggy. Coalescing to one requestAnimationFrame per burst keeps it to
+    // at most one measure (and one re-render) per actual frame.
+    let raf = 0;
+    function scheduleMeasure() {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        measure();
+      });
+    }
+
     // A short delay when the target lives in the sidebar drawer, so the
     // 0.3s open transition has time to finish before measuring its final
     // position — measuring mid-transition would spotlight the wrong spot.
     const delay = dependsOnSidebar ? 350 : 30;
     const t = setTimeout(measure, delay);
 
-    window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, true);
+    window.addEventListener("resize", scheduleMeasure);
+    window.addEventListener("scroll", scheduleMeasure, true);
     return () => {
       clearTimeout(t);
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure, true);
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("resize", scheduleMeasure);
+      window.removeEventListener("scroll", scheduleMeasure, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selector]);
@@ -127,6 +143,20 @@ export default function TourGuide({ active, onClose, onOpenSidebar, onCloseSideb
     if (!active) return;
     if (step.needsSidebar) onOpenSidebar?.();
     else if (window.matchMedia("(max-width: 860px)").matches) onCloseSidebar?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, stepIndex]);
+
+  // Auto-advance: move to the next step on its own after a few seconds,
+  // so the tour plays through without needing "Next" tapped every time.
+  // Restarts whenever the step changes; Back/Skip/Next still work as a
+  // manual override. Must sit above the early return below — all hooks
+  // in a component have to run on every render, in the same order, so a
+  // hook can never come after a conditional `return`.
+  const AUTO_ADVANCE_MS = 4500;
+  useEffect(() => {
+    if (!active) return;
+    const t = setTimeout(next, AUTO_ADVANCE_MS);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, stepIndex]);
 
@@ -167,46 +197,58 @@ export default function TourGuide({ active, onClose, onOpenSidebar, onCloseSideb
     const top = placeBelow ? rect.bottom + PAD + 8 : Math.max(12, rect.top - cardHeight - PAD - 8);
     const idealLeft = rect.left + rect.width / 2 - 150;
     const left = Math.min(Math.max(12, idealLeft), window.innerWidth - 300 - 12);
-    cardStyle = { ...cardStyle, top, left };
+    cardStyle = { ...cardStyle, top, left, transition: "top 0.2s ease, left 0.2s ease" };
   } else {
     cardStyle = { ...cardStyle, top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
   }
 
+  // A single backdrop with a rectangular hole cut out by clip-path, instead
+  // of four separate panes sized around the target. Four panes meant
+  // animating four elements' top/left/width/height every step — real
+  // layout properties, so the browser had to re-lay-out and repaint large
+  // parts of the screen every frame of the transition, which is what made
+  // step changes feel laggy. clip-path is handled on the compositor, so
+  // animating the hole's position is smooth without that layout cost —
+  // and clicks inside the hole still pass through untouched, because a
+  // clipped-out area never receives pointer events, so the highlighted
+  // control underneath is still directly clickable.
+  const holeStyle = hasTarget
+    ? {
+        clipPath: `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${rect.left - PAD}px ${rect.top - PAD}px, ${rect.left - PAD}px ${rect.bottom + PAD}px, ${rect.right + PAD}px ${rect.bottom + PAD}px, ${rect.right + PAD}px ${rect.top - PAD}px, ${rect.left - PAD}px ${rect.top - PAD}px)`,
+      }
+    : {};
+
   return (
     <div aria-live="polite" role="dialog" aria-label="App tour">
-      {hasTarget ? (
-        <>
-          {/* Four panes framing the target instead of one dark sheet with a
-              CSS-masked hole — real DOM gaps rather than a visual-only cutout,
-              so clicks inside the spotlight reach the actual element
-              underneath (letting someone try the highlighted control live)
-              while clicks anywhere else are caught here and do nothing,
-              keeping attention on the tour instead of the rest of the app. */}
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: Math.max(0, rect.top - PAD), background: "rgba(5,6,15,0.72)", zIndex: 3000 }} />
-          <div style={{ position: "fixed", top: rect.bottom + PAD, left: 0, right: 0, bottom: 0, background: "rgba(5,6,15,0.72)", zIndex: 3000 }} />
-          <div style={{ position: "fixed", top: Math.max(0, rect.top - PAD), left: 0, width: Math.max(0, rect.left - PAD), height: rect.height + PAD * 2, background: "rgba(5,6,15,0.72)", zIndex: 3000 }} />
-          <div style={{ position: "fixed", top: Math.max(0, rect.top - PAD), left: rect.right + PAD, right: 0, height: rect.height + PAD * 2, background: "rgba(5,6,15,0.72)", zIndex: 3000 }} />
-          {/* Glowing ring around the spotlight itself — purely decorative,
-              pointer-events:none so it never intercepts the click that's
-              meant to reach the real element inside it. */}
-          <div
-            aria-hidden="true"
-            style={{
-              position: "fixed",
-              top: rect.top - PAD,
-              left: rect.left - PAD,
-              width: rect.width + PAD * 2,
-              height: rect.height + PAD * 2,
-              borderRadius: 10,
-              boxShadow: "0 0 0 2px var(--accent), 0 0 18px var(--glow)",
-              zIndex: 3000,
-              pointerEvents: "none",
-              transition: "top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease",
-            }}
-          />
-        </>
-      ) : (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(5,6,15,0.72)", zIndex: 3000 }} />
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(5,6,15,0.72)",
+          zIndex: 3000,
+          transition: "clip-path 0.2s ease",
+          ...holeStyle,
+        }}
+      />
+      {hasTarget && (
+        // Glowing ring around the spotlight itself — purely decorative,
+        // pointer-events:none so it never intercepts the click that's
+        // meant to reach the real element inside it.
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: rect.top - PAD,
+            left: rect.left - PAD,
+            width: rect.width + PAD * 2,
+            height: rect.height + PAD * 2,
+            borderRadius: 10,
+            boxShadow: "0 0 0 2px var(--accent), 0 0 18px var(--glow)",
+            zIndex: 3000,
+            pointerEvents: "none",
+            transition: "top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease",
+          }}
+        />
       )}
 
       <div
@@ -229,6 +271,7 @@ export default function TourGuide({ active, onClose, onOpenSidebar, onCloseSideb
             {TOUR_STEPS.map((s, i) => (
               <span
                 key={s.id}
+
                 style={{
                   width: 5,
                   height: 5,

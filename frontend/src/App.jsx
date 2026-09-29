@@ -95,7 +95,7 @@ export default function App() {
       // the tour offers itself again next visit instead of persisting.
     }
     if (seen) return;
-    const t = setTimeout(() => setTourActive(true), 700);
+    const t = setTimeout(() => setTourActive(true), 500);
     return () => clearTimeout(t);
   }, [introPhase]);
 
